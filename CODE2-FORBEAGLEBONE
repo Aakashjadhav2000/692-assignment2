@@ -1,0 +1,55 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+#define LED_PATH_BASE "/sys/class/gpio/gpio"
+#define LED_ON "1"
+#define LED_OFF "0"
+
+void writeToFile(const char *path, const char *value) {
+    FILE *file = fopen(path, "w");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+    fprintf(file, "%s", value);
+    fclose(file);
+}
+
+int main() {
+    int gpioPin;
+    printf("Enter GPIO pin number: ");
+    scanf("%d", &gpioPin);
+
+    char gpioPath[50];
+    sprintf(gpioPath, "%s%d/", LED_PATH_BASE, gpioPin);
+
+    char exportPath[50];
+    sprintf(exportPath, "/sys/class/gpio/export");
+
+    char unexportPath[50];
+    sprintf(unexportPath, "/sys/class/gpio/unexport");
+
+    char directionPath[50];
+    sprintf(directionPath, "%sdirection", gpioPath);
+
+    char valuePath[50];
+    sprintf(valuePath, "%svalue", gpioPath);
+
+    // Export the GPIO pin and set its direction
+    writeToFile(exportPath, "60");
+    writeToFile(directionPath, "out");
+
+    // Blink the LED 5 times
+    for (int i = 0; i < 5; i++) {
+        writeToFile(valuePath, LED_ON);
+        sleep(1);  // LED on for 1 second
+        writeToFile(valuePath, LED_OFF);
+        sleep(1);  // LED off for 1 second
+    }
+
+    // Unexport the GPIO pin
+    writeToFile(unexportPath, "60");
+
+    return 0;
+}

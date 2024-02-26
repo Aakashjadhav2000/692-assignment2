@@ -11,7 +11,7 @@ typedef unsigned int uint32_t;
 #define BASE_PATH "/sys/class/gpio/gpio"
 
 static void set_gpio_value(const char *path, const char *value) {
-    int32_t fd;
+    int32_t fd; // File descriptor
 
     fd = open(path, O_WRONLY);
     (void)write(fd, value, strlen(value));
@@ -19,7 +19,7 @@ static void set_gpio_value(const char *path, const char *value) {
 }
 
 static void set_gpio_direction_output(const char *gpi_pin, const char *dir) {
-    int32_t fd_gpi_pin = open(gpi_pin, O_WRONLY);
+    int32_t fd_gpi_pin = open(gpi_pin, O_WRONLY); // File descriptor
     (void)write(fd_gpi_pin, dir, strlen(dir));
     (void)close(fd_gpi_pin);
 }
@@ -32,12 +32,12 @@ void configure_traffic_light(const char *led_name, const char *red_path, const c
 }
 
 int main(void) {
-    char LED1_RED_PATH[MAX_PATH_LENGTH], LED1_YELLOW_PATH[MAX_PATH_LENGTH], LED1_GREEN_PATH[MAX_PATH_LENGTH];
-    char LED2_RED_PATH[MAX_PATH_LENGTH], LED2_YELLOW_PATH[MAX_PATH_LENGTH], LED2_GREEN_PATH[MAX_PATH_LENGTH];
-    float green_sig_time;
-    uint32_t yellow_sig_time = 5;
-    uint32_t all_red_time = 2;
-    uint32_t pin_number;
+    char LED1_RED_PATH[MAX_PATH_LENGTH], LED1_YELLOW_PATH[MAX_PATH_LENGTH], LED1_GREEN_PATH[MAX_PATH_LENGTH]; // Paths for the first traffic light
+    char LED2_RED_PATH[MAX_PATH_LENGTH], LED2_YELLOW_PATH[MAX_PATH_LENGTH], LED2_GREEN_PATH[MAX_PATH_LENGTH]; // Paths for the second traffic light
+    float green_sig_time; // Green signal time in minutes
+    uint32_t yellow_sig_time = 5; // Yellow signal time in seconds
+    uint32_t all_red_time = 2;  // All red time in seconds
+    uint32_t pin_number; // GPIO pin number
 
     // Get GPIO pin numbers from the user and construct the paths
     printf("Enter GPIO pin number for LED1 Red: ");

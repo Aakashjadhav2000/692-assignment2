@@ -1,0 +1,119 @@
+with Ada.Text_IO; use Ada.Text_IO;
+with Ada.Integer_Text_IO; use Ada.Integer_Text_IO;
+with Ada.Strings.Fixed; use Ada.Strings.Fixed;
+with Interfaces.C; use Interfaces.C;
+with Ada.Command_Line;
+
+procedure Traffic_Signal is
+   type String_Access is access all String;
+   type Duration is new Float;
+
+   procedure Set_GPIO_Value (Path : String; Value : String) is
+      Fd : Integer;
+   begin
+      Fd := Interfaces.C.Open (To_C (Path), O_WRONLY);
+      Interfaces.C.Write (Fd, To_C (Value), Value'Length);
+      Interfaces.C.Close (Fd);
+   end Set_GPIO_Value;
+
+   procedure Set_GPIO_Direction_Output (GPI_Pin : String; Dir : String) is
+      Fd_GPI_Pin : Integer;
+   begin
+      Fd_GPI_Pin := Interfaces.C.Open (To_C (GPI_Pin), O_WRONLY);
+      Interfaces.C.Write (Fd_GPI_Pin, To_C (Dir), Dir'Length);
+      Interfaces.C.Close (Fd_GPI_Pin);
+   end Set_GPIO_Direction_Output;
+
+   procedure Configure_Traffic_Light (LED_Name : String; Red_Path : String; Yellow_Path : String; Green_Path : String; State : String; Duration : Duration) is
+   begin
+      Set_GPIO_Value (Red_Path, State (1 .. 1));
+      Set_GPIO_Value (Yellow_Path, State (2 .. 2));
+      Set_GPIO_Value (Green_Path, State (3 .. 3));
+      Put_Line (LED_Name & " - Red: " & State (1 .. 1) & ", Yellow: " & State (2 .. 2) & ", Green: " & State (3 .. 3) & ", Duration: " & Duration'Img & " seconds");
+   end Configure_Traffic_Light;
+
+   LED1_Red_Path, LED1_Yellow_Path, LED1_Green_Path : String_Access;
+   LED2_Red_Path, LED2_Yellow_Path, LED2_Green_Path : String_Access;
+   Green_Sig_Time : Duration;
+   Yellow_Sig_Time : constant Integer := 5;
+   All_Red_Time : constant Integer := 2;
+   Pin_Number : Integer;
+   Base_Path : constant String := "/sys/class/gpio/gpio";
+
+begin
+   -- Get GPIO pin numbers from the user and construct the paths
+   Put_Line ("Enter GPIO pin number for LED1 Red:");
+   Get (Pin_Number);
+   LED1_Red_Path := new String (Base_Path & Integer'Image (Pin_Number) & "/value");
+
+   Put_Line ("Enter GPIO pin number for LED1 Yellow:");
+   Get (Pin_Number);
+   LED1_Yellow_Path := new String (Base_Path & Integer'Image (Pin_Number) & "/value");
+
+   Put_Line ("Enter GPIO pin number for LED1 Green:");
+   Get (Pin_Number);
+   LED1_Green_Path := new String (Base_Path & Integer'Image (Pin_Number) & "/value");
+
+   Put_Line ("Enter GPIO pin number for LED2 Red:");
+   Get (Pin_Number);
+   LED2_Red_Path := new String (Base_Path & Integer'Image (Pin_Number) & "/value");
+
+   Put_Line ("Enter GPIO pin number for LED2 Yellow:");
+   Get (Pin_Number);
+   LED2_Yellow_Path := new String (Base_Path & Integer'Image (Pin_Number) & "/value");
+
+   Put_Line ("Enter GPIO pin number for LED2 Green:");
+   Get (Pin_Number);
+   LED2_Green_Path := new String (Base_Path & Integer'Image (Pin_Number) & "/value");
+
+   Put_Line ("Enter green signal time in minutes (can be a fraction):");
+   Get (Green_Sig_Time);
+   Green_Sig_Time := Green_Sig_Time * 60.0; -- Convert to seconds
+
+   -- Set the directions of the GPIO pins for the LEDs
+   Set_GPIO_Direction_Output (LED1_Red_Path.all, "out");
+   Set_GPIO_Direction_Output (LED1_Yellow_Path.all, "out");
+   Set_GPIO_Direction_Output (LED1_Green_Path.all, "out");
+   Set_GPIO_Direction_Output (LED2_Red_Path.all, "out");
+   Set_GPIO_Direction_Output (LED2_Yellow_Path.all, "out");
+   Set_GPIO_Direction_Output (LED2_Green_Path.all, "out");
+
+   loop
+      -- Set the first traffic light to green and the second to red
+      Configure_Traffic_Light ("LED1", LED1_Red_Path.all, LED1_Yellow_Path.all, LED1_Green_Path.all, "001", Green_Sig_Time);
+      Configure_Traffic_Light ("LED2", LED2_Red_Path.all, LED2_Yellow_Path.all, LED2_Green_Path.all, "100", All_Red_Time);
+
+      delay Duration (Green_Sig_Time); -- Wait for green signal time
+
+      -- Set the first traffic light to yellow
+      Configure_Traffic_Light ("LED1", LED1_Red_Path.all, LED1_Yellow_Path.all, LED1_Green_Path.all, "010", Duration (Yellow_Sig_Time));
+
+      delay Duration (Yellow_Sig_Time); -- Wait for 5 seconds
+
+      -- Set the first traffic light to red
+      Configure_Traffic_Light ("LED1", LED1_Red_Path.all, LED1_Yellow_Path.all, LED1_Green_Path.all, "100", Duration (All_Red_Time));
+
+      -- Set the second traffic light to red and yellow
+      Configure_Traffic_Light ("LED2", LED2_Red_Path.all, LED2_Yellow_Path.all, LED2_Green_Path.all, "110", Duration (All_Red_Time));
+
+      delay Duration (All_Red_Time); -- Wait for 2 seconds with both sides red
+
+      -- Set the second traffic light to green
+      Configure_Traffic_Light ("LED2", LED2_Red_Path.all, LED2_Yellow_Path.all, LED2_Green_Path.all, "001", Green_Sig_Time);
+
+      delay Duration (Green_Sig_Time); -- Wait for green signal time
+
+      -- Set the second traffic light to yellow
+      Configure_Traffic_Light ("LED2", LED2_Red_Path.all, LED2_Yellow_Path.all, LED2_Green_Path.all, "010", Duration (Yellow_Sig_Time));
+
+      delay Duration (Yellow_Sig_Time); -- Wait for 5 seconds
+
+      -- Set the second traffic light to red
+      Configure_Traffic_Light ("LED2", LED2_Red_Path.all, LED2_Yellow_Path.all, LED2_Green_Path.all, "100", Duration (All_Red_Time));
+
+      -- Set the first traffic light to red and yellow
+      Configure_Traffic_Light ("LED1", LED1_Red_Path.all, LED1_Yellow_Path.all, LED1_Green_Path.all, "110", Duration (All_Red_Time));
+
+      delay Duration (All_Red_Time); -- Wait for 2 seconds with both sides red
+   end loop;
+end Traffic_Signal;

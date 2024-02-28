@@ -74,6 +74,9 @@ int main(void) {
     set_gpio_direction_output(LED2_YELLOW_PATH, "out");
     set_gpio_direction_output(LED2_GREEN_PATH, "out");
 
+
+    printf("Traffic light control program started...\n");
+
     while (1) {
         /* Set the first traffic light to green and the second to red */ 
         configure_traffic_light(LED1_RED_PATH, LED1_YELLOW_PATH, LED1_GREEN_PATH, "001");

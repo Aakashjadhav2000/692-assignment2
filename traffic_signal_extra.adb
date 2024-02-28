@@ -1,105 +1,97 @@
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Integer_Text_IO; use Ada.Integer_Text_IO;
 with Ada.Real_Time; use Ada.Real_Time;
-with Ada.Streams.Stream_IO; use Ada.Streams.Stream_IO;
-with Ada.Streams; use Ada.Streams;
 
-procedure Traffic_Light is
-   subtype Path_Type is String(1 .. 50);
+procedure Traffic_Signal is
 
-   BASE_PATH : constant String := "/sys/class/gpio/gpio";
+   type Light_Color is (Red, Yellow, Green);
+   type Traffic_Light is record
+      Red_Pin    : Integer;
+      Yellow_Pin : Integer;
+      Green_Pin  : Integer;
+   end record;
 
-   procedure Set_GPIO_Value(Path : Path_Type; Value : Character) is
-      File : Stream_IO.File_Type;
-      Data : Stream_Element_Array(1 .. 1) := (1 => Stream_Element'Val(Character'Pos(Value)));
+   -- Time durations
+   Yellow_Signal_Time : constant Time_Span := Seconds(5);
+   All_Red_Time       : constant Time_Span := Seconds(2);
+   Green_Signal_Time  : Time_Span;
+
+   -- Traffic lights
+   Light1, Light2 : Traffic_Light;
+
+   procedure Set_Light (L : in Traffic_Light; Color : in Light_Color) is
    begin
-      Stream_IO.Open(File, Stream_IO.Out_File, Path);
-      Stream_IO.Write(File, Data);
-      Stream_IO.Flush(File);
-      Stream_IO.Close(File);
-   end Set_GPIO_Value;
+      -- Set the traffic light to the specified color
+      -- This is where you would set the GPIO pins
+      case Color is
+         when Red    => Put_Line("Light " & Integer'Image(L.Red_Pin) & ": Red");
+         when Yellow => Put_Line("Light " & Integer'Image(L.Yellow_Pin) & ": Yellow");
+         when Green  => Put_Line("Light " & Integer'Image(L.Green_Pin) & ": Green");
+      end case;
+   end Set_Light;
 
-   procedure Set_GPIO_Direction_Output(GPIO_Pin : Path_Type; Dir : String) is
-      File : Stream_IO.File_Type;
-      Data : Stream_Element_Array(1 .. Dir'Length) := (others => Stream_Element'Val(Character'Pos(' ')));
+   procedure Cycle_Lights is
+      Next_Time : Time;
    begin
-      for I in 1 .. Dir'Length loop
-         Data(I) := Stream_Element'Val(Character'Pos(Dir(I)));
+      loop
+         -- Set Light1 to Green and Light2 to Red
+         Set_Light(Light1, Green);
+         Set_Light(Light2, Red);
+         Next_Time := Clock + Green_Signal_Time;
+         delay until Next_Time;
+
+         -- Set Light1 to Yellow
+         Set_Light(Light1, Yellow);
+         Next_Time := Clock + Yellow_Signal_Time;
+         delay until Next_Time;
+
+         -- Set Light1 to Red
+         Set_Light(Light1, Red);
+         Next_Time := Clock + All_Red_Time;
+         delay until Next_Time;
+
+         -- Set Light2 to Green
+         Set_Light(Light2, Green);
+         Next_Time := Clock + Green_Signal_Time;
+         delay until Next_Time;
+
+         -- Set Light2 to Yellow
+         Set_Light(Light2, Yellow);
+         Next_Time := Clock + Yellow_Signal_Time;
+         delay until Next_Time;
+
+         -- Set Light2 to Red
+         Set_Light(Light2, Red);
+         Next_Time := Clock + All_Red_Time;
+         delay until Next_Time;
       end loop;
+   end Cycle_Lights;
 
-      Stream_IO.Open(File, Stream_IO.Out_File, GPIO_Pin & "/direction");
-      Stream_IO.Write(File, Data);
-      Stream_IO.Flush(File);
-      Stream_IO.Close(File);
-   end Set_GPIO_Direction_Output;
-
-   LED1_Red_Path, LED1_Yellow_Path, LED1_Green_Path : Path_Type;
-   LED2_Red_Path, LED2_Yellow_Path, LED2_Green_Path : Path_Type;
-   Green_Sig_Time : Float := 1.0; -- Default green signal time in minutes
-   Yellow_Sig_Time : constant Natural := 5; -- Yellow signal time in seconds
-   All_Red_Time : constant Natural := 2; -- All red time in seconds
-   Pin_Number : Natural;
 begin
-   -- Get GPIO pin numbers from the user and construct the paths
-   Put("Enter GPIO pin number for LED1 Red: ");
-   Get(Pin_Number);
-   LED1_Red_Path := BASE_PATH & Integer'Image(Pin_Number) & "/value";
+   -- Get GPIO pin numbers from the user
+   Put("Enter GPIO pin number for Light1 Red: ");
+   Get(Light1.Red_Pin);
+   Put("Enter GPIO pin number for Light1 Yellow: ");
+   Get(Light1.Yellow_Pin);
+   Put("Enter GPIO pin number for Light1 Green: ");
+   Get(Light1.Green_Pin);
 
-   -- Repeat for other LEDs...
+   Put("Enter GPIO pin number for Light2 Red: ");
+   Get(Light2.Red_Pin);
+   Put("Enter GPIO pin number for Light2 Yellow: ");
+   Get(Light2.Yellow_Pin);
+   Put("Enter GPIO pin number for Light2 Green: ");
+   Get(Light2.Green_Pin);
 
-   -- Set the directions of the GPIO pins for the LEDs
-   Set_GPIO_Direction_Output(LED1_Red_Path(1 .. LED1_Red_Path'Last - 6), "out");
-   -- Repeat for other LEDs...
+   -- Get green signal time in seconds
+   Put("Enter green signal time in seconds: ");
+   declare
+      Temp : Float;
+   begin
+      Get(Temp);
+      Green_Signal_Time := Seconds(Temp);
+   end;
 
-   -- Main loop
-   loop
-      -- Set the first traffic light to green and the second to red
-      Set_GPIO_Value(LED1_Red_Path, '0');
-      Set_GPIO_Value(LED1_Yellow_Path, '0');
-      Set_GPIO_Value(LED1_Green_Path, '1');
-      Set_GPIO_Value(LED2_Red_Path, '1');
-      Set_GPIO_Value(LED2_Yellow_Path, '0');
-      Set_GPIO_Value(LED2_Green_Path, '0');
-      delay Duration(Green_Sig_Time * 60.0);
-
-      -- Set the first traffic light to yellow
-      Set_GPIO_Value(LED1_Red_Path, '0');
-      Set_GPIO_Value(LED1_Yellow_Path, '1');
-      Set_GPIO_Value(LED1_Green_Path, '0');
-      delay Duration(Yellow_Sig_Time);
-
-      -- Set the first traffic light to red
-      Set_GPIO_Value(LED1_Red_Path, '1');
-      Set_GPIO_Value(LED1_Yellow_Path, '0');
-      Set_GPIO_Value(LED1_Green_Path, '0');
-
-      -- Set the second traffic light to red and yellow
-      Set_GPIO_Value(LED2_Red_Path, '1');
-      Set_GPIO_Value(LED2_Yellow_Path, '1');
-      Set_GPIO_Value(LED2_Green_Path, '0');
-      delay Duration(All_Red_Time);
-
-      -- Set the second traffic light to green
-      Set_GPIO_Value(LED2_Red_Path, '0');
-      Set_GPIO_Value(LED2_Yellow_Path, '0');
-      Set_GPIO_Value(LED2_Green_Path, '1');
-      delay Duration(Green_Sig_Time * 60.0);
-
-      -- Set the second traffic light to yellow
-      Set_GPIO_Value(LED2_Red_Path, '0');
-      Set_GPIO_Value(LED2_Yellow_Path, '1');
-      Set_GPIO_Value(LED2_Green_Path, '0');
-      delay Duration(Yellow_Sig_Time);
-
-      -- Set the second traffic light to red
-      Set_GPIO_Value(LED2_Red_Path, '1');
-      Set_GPIO_Value(LED2_Yellow_Path, '0');
-      Set_GPIO_Value(LED2_Green_Path, '0');
-
-      -- Set the first traffic light to red and yellow
-      Set_GPIO_Value(LED1_Red_Path, '1');
-      Set_GPIO_Value(LED1_Yellow_Path, '1');
-      Set_GPIO_Value(LED1_Green_Path, '0');
-      delay Duration(All_Red_Time);
-   end loop;
-end Traffic_Light;
+   -- Start the traffic light cycle
+   Cycle_Lights;
+end Traffic_Signal;

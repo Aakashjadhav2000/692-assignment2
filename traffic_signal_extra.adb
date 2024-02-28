@@ -6,7 +6,7 @@ procedure Traffic_Light_Control is
 
    type File_Descriptor is new Interfaces.C.int;
    type Path_String is array(Positive range <>) of Character;
-   type State_String is array(1..3) of Character;
+   type State_String is array(Positive range <>) of Character;
 
    MAX_PATH_LENGTH : constant := 50;
    BASE_PATH : constant := "/sys/class/gpio/gpio";
@@ -16,7 +16,7 @@ procedure Traffic_Light_Control is
    
    function To_C_String is new Ada.Unchecked_Conversion(String, Path_String);
 
-   procedure Set_GPIO_Value(Path : Path_String; Value : String) is
+   procedure Set_GPIO_Value(Path : Path_String; Value : State_String) is
       Fd : File_Descriptor;
       Len : Interfaces.C.size_t := Path'Length;
       Val : String := Value & ASCII.CR; -- Adding Carriage Return since you might need it for the write operation
@@ -53,9 +53,9 @@ procedure Traffic_Light_Control is
 
    procedure Configure_Traffic_Light(Red_Path, Yellow_Path, Green_Path : Path_String; State : State_String) is
    begin
-      Set_GPIO_Value(Red_Path, State(1));
-      Set_GPIO_Value(Yellow_Path, State(2));
-      Set_GPIO_Value(Green_Path, State(3));
+      Set_GPIO_Value(Red_Path, State);
+      Set_GPIO_Value(Yellow_Path, State);
+      Set_GPIO_Value(Green_Path, State);
    end Configure_Traffic_Light;
 
    -- Main procedure
@@ -67,27 +67,27 @@ procedure Traffic_Light_Control is
    begin
       Put_Line("Enter GPIO pin number for LED1 Red: ");
       Get(Pin_Number);
-      LED1_RED_PATH := To_C_String(BASE_PATH & Pin_Number & "/value");
+      LED1_RED_PATH := To_C_String(BASE_PATH & Integer'Image(Pin_Number) & "/value");
 
       Put_Line("Enter GPIO pin number for LED1 Yellow: ");
       Get(Pin_Number);
-      LED1_YELLOW_PATH := To_C_String(BASE_PATH & Pin_Number & "/value");
+      LED1_YELLOW_PATH := To_C_String(BASE_PATH & Integer'Image(Pin_Number) & "/value");
 
       Put_Line("Enter GPIO pin number for LED1 Green: ");
       Get(Pin_Number);
-      LED1_GREEN_PATH := To_C_String(BASE_PATH & Pin_Number & "/value");
+      LED1_GREEN_PATH := To_C_String(BASE_PATH & Integer'Image(Pin_Number) & "/value");
 
       Put_Line("Enter GPIO pin number for LED2 Red: ");
       Get(Pin_Number);
-      LED2_RED_PATH := To_C_String(BASE_PATH & Pin_Number & "/value");
+      LED2_RED_PATH := To_C_String(BASE_PATH & Integer'Image(Pin_Number) & "/value");
 
       Put_Line("Enter GPIO pin number for LED2 Yellow: ");
       Get(Pin_Number);
-      LED2_YELLOW_PATH := To_C_String(BASE_PATH & Pin_Number & "/value");
+      LED2_YELLOW_PATH := To_C_String(BASE_PATH & Integer'Image(Pin_Number) & "/value");
 
       Put_Line("Enter GPIO pin number for LED2 Green: ");
       Get(Pin_Number);
-      LED2_GREEN_PATH := To_C_String(BASE_PATH & Pin_Number & "/value");
+      LED2_GREEN_PATH := To_C_String(BASE_PATH & Integer'Image(Pin_Number) & "/value");
 
       Put_Line("Enter green signal time in minutes (can be a fraction): ");
       Get(Green_Sig_Time);

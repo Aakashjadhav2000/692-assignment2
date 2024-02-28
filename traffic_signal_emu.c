@@ -90,6 +90,9 @@ int main(void) {
         /* Set the first traffic light to red */
         configure_traffic_light("LED1", LED1_RED_PATH, LED1_YELLOW_PATH, LED1_GREEN_PATH, "100", all_red_time);
 
+        /* Set the second traffic light to red and yellow */
+        configure_traffic_light("LED2", LED2_RED_PATH, LED2_YELLOW_PATH, LED2_GREEN_PATH, "110", all_red_time);
+
         (void)sleep(all_red_time); /* Wait for 2 seconds with both sides red */
 
         /* Set the second traffic light to green */
@@ -104,6 +107,9 @@ int main(void) {
 
         /* Set the second traffic light to red */
         configure_traffic_light("LED2", LED2_RED_PATH, LED2_YELLOW_PATH, LED2_GREEN_PATH, "100", all_red_time);
+
+        /* Set the first traffic light to red and yellow */
+        configure_traffic_light("LED1", LED1_RED_PATH, LED1_YELLOW_PATH, LED1_GREEN_PATH, "110", all_red_time);
 
         (void)sleep(all_red_time); /* Wait for 2 seconds with both sides red */
     }
